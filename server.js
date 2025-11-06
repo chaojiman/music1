@@ -1,43 +1,38 @@
 const express = require('express');
 const path = require('path');
-const { pipeline } = require('@xenova/transformers');
+const { loadTranslationModel, getModel, isModelLoading, getModelLoadError } = require('./utils/model-loader');
+
+// 修复Windows控制台中文乱码问题
+if (process.platform === 'win32') {
+  // 设置控制台代码页为UTF-8
+  try {
+    const { execSync } = require('child_process');
+    execSync('chcp 65001', { stdio: 'ignore' });
+  } catch (e) {
+    // 忽略错误
+  }
+  
+  // 设置输出流编码
+  if (process.stdout.isTTY) {
+    try {
+      process.stdout.setDefaultEncoding('utf8');
+    } catch (e) {}
+  }
+  if (process.stderr.isTTY) {
+    try {
+      process.stderr.setDefaultEncoding('utf8');
+    } catch (e) {}
+  }
+}
 
 const app = express();
 const PORT = 3000;
 
-let translator = null;
-let isModelLoading = false;
-let modelLoadError = null;
 const startTime = Date.now();
 const requestLogs = [];
 
 app.use(express.json());
 app.use(express.static('public'));
-
-async function loadModel() {
-  if (translator) return translator;
-  if (isModelLoading) {
-    while (isModelLoading) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    return translator;
-  }
-
-  isModelLoading = true;
-  try {
-    console.log('正在加载翻译模型...');
-    translator = await pipeline('translation', 'Xenova/nllb-200-distilled-600M');
-    console.log('模型加载成功！');
-    modelLoadError = null;
-  } catch (error) {
-    console.error('模型加载失败:', error.message);
-    modelLoadError = error.message;
-    translator = null;
-  } finally {
-    isModelLoading = false;
-  }
-  return translator;
-}
 
 const languageMap = {
   'zh-CN': { code: 'zho_Hans', name: '🇨🇳 中文简体' },
@@ -102,12 +97,12 @@ app.post('/api/translate', async (req, res) => {
   }
 
   try {
-    const model = await loadModel();
+    const model = await loadTranslationModel();
     if (!model) {
       logEntry.status = 'error';
       return res.status(503).json({ 
         error: '模型未加载',
-        details: modelLoadError 
+        details: getModelLoadError() 
       });
     }
 
@@ -143,11 +138,11 @@ app.post('/api/translate-all', async (req, res) => {
   }
 
   try {
-    const model = await loadModel();
+    const model = await loadTranslationModel();
     if (!model) {
       return res.status(503).json({ 
         error: '模型未加载',
-        details: modelLoadError 
+        details: getModelLoadError() 
       });
     }
 
@@ -188,9 +183,9 @@ app.get('/api/status', (req, res) => {
   const uptime = Math.floor((Date.now() - startTime) / 1000);
   res.json({
     status: 'running',
-    modelLoaded: !!translator,
-    modelLoading: isModelLoading,
-    modelError: modelLoadError,
+    modelLoaded: !!getModel(),
+    modelLoading: isModelLoading(),
+    modelError: getModelLoadError(),
     uptime,
     totalRequests: requestLogs.length,
     recentLogs: requestLogs.slice(-10)
@@ -213,7 +208,7 @@ app.listen(PORT, () => {
 ╚═══════════════════════════════════════════════════════╝
   `);
   
-  loadModel().catch(err => {
+  loadTranslationModel().catch(err => {
     console.error('后台加载模型失败，将在首次请求时重试:', err.message);
   });
 });

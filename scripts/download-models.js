@@ -1,4 +1,4 @@
-const { pipeline } = require('@xenova/transformers');
+const { pipeline, env } = require('@xenova/transformers');
 
 console.log('==========================================');
 console.log('  Trans22 模型预下载工具');
@@ -11,6 +11,8 @@ console.log('首次下载可能需要较长时间，请耐心等待...\n');
 
 async function downloadModel() {
     try {
+        env.localModelPath = 'D:/test/music1/local_models';
+        env.allowRemoteModels = false;
         const translator = await pipeline('translation', 'Xenova/nllb-200-distilled-600M');
         
         console.log('\n✅ 模型下载成功！');
