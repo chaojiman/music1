@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const { loadTranslationModel, getModel, isModelLoading, getModelLoadError } = require('./utils/model-loader');
+const { loadTranslationModel, MODEL_ID } = require('./utils/model-loader');
 
 // 修复Windows控制台中文乱码问题
 if (process.platform === 'win32') {
@@ -28,11 +28,62 @@ if (process.platform === 'win32') {
 const app = express();
 const PORT = 3000;
 
+let translator = null;
+let isModelLoading = false;
+let modelLoadError = null;
+let modelSource = null;
+let modelLoadFailures = [];
 const startTime = Date.now();
 const requestLogs = [];
 
 app.use(express.json());
 app.use(express.static('public'));
+
+async function loadModel() {
+  if (translator) return translator;
+  if (isModelLoading) {
+    while (isModelLoading) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return translator;
+  }
+
+  isModelLoading = true;
+  modelLoadFailures = [];
+
+  try {
+    console.log(`正在加载翻译模型 (${MODEL_ID})...`);
+    const result = await loadTranslationModel({
+      onHostAttempt: ({ name, host }) => {
+        console.log(`尝试从 ${name} (${host}) 加载模型...`);
+      },
+      onHostFailure: ({ name, error }) => {
+        console.warn(`从 ${name} 加载失败: ${error.message}`);
+      },
+    });
+
+    translator = result.translator;
+    modelSource = { name: result.name, host: result.host };
+    modelLoadError = null;
+    console.log(`模型加载成功！来源: ${result.name} (${result.host})`);
+  } catch (error) {
+    console.error('模型加载失败:', error.message);
+    translator = null;
+    modelSource = null;
+    modelLoadError = error.message;
+    modelLoadFailures = error.failures || [];
+
+    if (modelLoadFailures.length) {
+      modelLoadFailures.forEach((failure, index) => {
+        const label = failure.name || failure.host || `镜像 #${index + 1}`;
+        console.error(`  [${index + 1}] ${label}: ${failure.message}`);
+      });
+    }
+  } finally {
+    isModelLoading = false;
+  }
+  return translator;
+}
 
 const languageMap = {
   'zh-CN': { code: 'zho_Hans', name: '🇨🇳 中文简体' },
@@ -97,12 +148,12 @@ app.post('/api/translate', async (req, res) => {
   }
 
   try {
-    const model = await loadTranslationModel();
+    const model = await loadModel();
     if (!model) {
       logEntry.status = 'error';
       return res.status(503).json({ 
         error: '模型未加载',
-        details: getModelLoadError() 
+        details: modelLoadError 
       });
     }
 
@@ -138,11 +189,11 @@ app.post('/api/translate-all', async (req, res) => {
   }
 
   try {
-    const model = await loadTranslationModel();
+    const model = await loadModel();
     if (!model) {
       return res.status(503).json({ 
         error: '模型未加载',
-        details: getModelLoadError() 
+        details: modelLoadError 
       });
     }
 
@@ -183,9 +234,12 @@ app.get('/api/status', (req, res) => {
   const uptime = Math.floor((Date.now() - startTime) / 1000);
   res.json({
     status: 'running',
-    modelLoaded: !!getModel(),
-    modelLoading: isModelLoading(),
-    modelError: getModelLoadError(),
+    modelLoaded: !!translator,
+    modelLoading: isModelLoading,
+    modelError: modelLoadError,
+    modelSource,
+    modelFailures: modelLoadFailures,
+    modelId: MODEL_ID,
     uptime,
     totalRequests: requestLogs.length,
     recentLogs: requestLogs.slice(-10)
@@ -208,7 +262,7 @@ app.listen(PORT, () => {
 ╚═══════════════════════════════════════════════════════╝
   `);
   
-  loadTranslationModel().catch(err => {
+  loadModel().catch(err => {
     console.error('后台加载模型失败，将在首次请求时重试:', err.message);
   });
 });

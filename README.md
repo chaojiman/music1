@@ -73,6 +73,16 @@ npm run download
 
 注意：后端模型下载可能受网络限制，但**不影响前端翻译使用**。
 
+### 镜像配置（可选）
+
+如果无法直接访问 Hugging Face Hub，可以通过以下环境变量配置镜像：
+
+- `TRANS22_MODEL_HOST`：优先使用的主镜像地址，例如 `https://hf-mirror.com/`
+- `TRANS22_MODEL_MIRRORS`：备用镜像列表，使用逗号分隔，例如 `https://mirror1.example.com,https://mirror2.example.com`
+- `TRANS22_MODEL_ID`：自定义要加载的模型 ID（默认 `Xenova/nllb-200-distilled-600M`）
+
+下载脚本和后端会按顺序尝试所有可用镜像，直到模型成功加载。
+
 ## 📂 项目结构
 
 ```

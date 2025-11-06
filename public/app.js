@@ -56,6 +56,7 @@ async function checkStatus() {
         
         const indicator = document.getElementById('statusIndicator');
         const modelStatus = document.getElementById('modelStatus');
+        const modelSourceLabel = data.modelSource?.name || data.modelSource?.host || '';
         
         if (data.modelLoading) {
             indicator.className = 'status-loading';
@@ -64,13 +65,20 @@ async function checkStatus() {
         } else if (data.modelLoaded) {
             indicator.className = 'status-ready';
             indicator.textContent = '✅ 模型已就绪';
-            modelStatus.textContent = '✅ 已就绪';
+            const suffix = modelSourceLabel ? ` · ${modelSourceLabel}` : '';
+            modelStatus.textContent = `✅ 已就绪${suffix}`;
             document.getElementById('translateBtn').disabled = false;
             document.getElementById('translateAllBtn').disabled = false;
         } else {
             indicator.className = 'status-error';
             indicator.textContent = '❌ 模型加载失败';
-            modelStatus.textContent = '❌ 未加载';
+            const rawError = data.modelError || '';
+            const maxLength = 80;
+            const trimmedError = rawError.length > maxLength 
+                ? `${rawError.slice(0, maxLength)}...`
+                : rawError;
+            const errorText = trimmedError ? ` (${trimmedError})` : '';
+            modelStatus.textContent = `❌ 未加载${errorText}`;
         }
         
         document.getElementById('uptime').textContent = `运行时间: ${formatUptime(data.uptime)}`;
