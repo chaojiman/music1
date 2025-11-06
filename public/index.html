@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trans22 - 离线翻译工具</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌍 Trans22 离线翻译工具</h1>
+            <p class="subtitle">基于本地 AI 模型 | 支持 28 种语言 | 100% 离线 | 隐私保护</p>
+            <div class="status-bar">
+                <span id="statusIndicator" class="status-loading">⏳ 模型加载中...</span>
+                <span id="uptime" class="uptime"></span>
+            </div>
+        </header>
+
+        <main>
+            <div class="translation-section">
+                <div class="input-section">
+                    <h2>📝 输入文本</h2>
+                    <textarea 
+                        id="inputText" 
+                        placeholder="请输入要翻译的英文文本...&#10;&#10;例如: Hello, this is a test of the offline translation system."
+                        rows="8"
+                    ></textarea>
+                    <div class="char-count">字符数: <span id="charCount">0</span></div>
+                </div>
+
+                <div class="controls">
+                    <div class="language-selector">
+                        <label for="targetLang">🎯 目标语言：</label>
+                        <select id="targetLang">
+                            <option value="zh-CN" selected>🇨🇳 中文简体</option>
+                        </select>
+                    </div>
+                    <div class="button-group">
+                        <button id="translateBtn" class="btn btn-primary">
+                            🎯 翻译到选中语言
+                        </button>
+                        <button id="translateAllBtn" class="btn btn-secondary">
+                            🌍 翻译到所有语言
+                        </button>
+                    </div>
+                </div>
+
+                <div class="output-section">
+                    <h2>✨ 翻译结果</h2>
+                    <div id="singleResult" class="single-result" style="display: none;">
+                        <div class="result-header">
+                            <span id="resultLangName"></span>
+                            <button class="btn-copy" onclick="copyResult()">📋 复制</button>
+                        </div>
+                        <div id="resultText" class="result-text"></div>
+                    </div>
+                    <div id="allResults" class="all-results" style="display: none;"></div>
+                    <div id="loadingIndicator" class="loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>正在翻译中，请稍候...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <div class="card">
+                    <h3>📊 实时状态</h3>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">模型状态:</span>
+                            <span id="modelStatus" class="stat-value">加载中...</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">运行时间:</span>
+                            <span id="runtimeDisplay" class="stat-value">0秒</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">翻译次数:</span>
+                            <span id="requestCount" class="stat-value">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>💡 使用说明</h3>
+                    <ul class="guide-list">
+                        <li>✅ 在文本框输入英文内容</li>
+                        <li>✅ 选择目标语言（默认中文简体）</li>
+                        <li>✅ 点击按钮进行翻译</li>
+                        <li>✅ 支持单语言或全语言翻译</li>
+                        <li>✅ 100% 离线，数据不离开设备</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>🎯 支持语言（28种）</h3>
+                    <div id="languageList" class="language-grid">
+                        加载中...
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>🔒 您的数据完全离线处理，隐私得到保护</p>
+            <p class="footer-links">
+                <a href="/api/status" target="_blank">API 状态</a> | 
+                <a href="https://github.com" target="_blank">GitHub</a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
