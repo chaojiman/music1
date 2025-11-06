@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const { pipeline } = require('@xenova/transformers');
+const { loadTranslationModel, MODEL_ID } = require('./utils/model-loader');
 
 const app = express();
 const PORT = 3000;
@@ -8,6 +8,8 @@ const PORT = 3000;
 let translator = null;
 let isModelLoading = false;
 let modelLoadError = null;
+let modelSource = null;
+let modelLoadFailures = [];
 const startTime = Date.now();
 const requestLogs = [];
 
@@ -24,15 +26,36 @@ async function loadModel() {
   }
 
   isModelLoading = true;
+  modelLoadFailures = [];
+
   try {
-    console.log('正在加载翻译模型...');
-    translator = await pipeline('translation', 'Xenova/nllb-200-distilled-600M');
-    console.log('模型加载成功！');
+    console.log(`正在加载翻译模型 (${MODEL_ID})...`);
+    const result = await loadTranslationModel({
+      onHostAttempt: ({ name, host }) => {
+        console.log(`尝试从 ${name} (${host}) 加载模型...`);
+      },
+      onHostFailure: ({ name, error }) => {
+        console.warn(`从 ${name} 加载失败: ${error.message}`);
+      },
+    });
+
+    translator = result.translator;
+    modelSource = { name: result.name, host: result.host };
     modelLoadError = null;
+    console.log(`模型加载成功！来源: ${result.name} (${result.host})`);
   } catch (error) {
     console.error('模型加载失败:', error.message);
-    modelLoadError = error.message;
     translator = null;
+    modelSource = null;
+    modelLoadError = error.message;
+    modelLoadFailures = error.failures || [];
+
+    if (modelLoadFailures.length) {
+      modelLoadFailures.forEach((failure, index) => {
+        const label = failure.name || failure.host || `镜像 #${index + 1}`;
+        console.error(`  [${index + 1}] ${label}: ${failure.message}`);
+      });
+    }
   } finally {
     isModelLoading = false;
   }
@@ -191,6 +214,9 @@ app.get('/api/status', (req, res) => {
     modelLoaded: !!translator,
     modelLoading: isModelLoading,
     modelError: modelLoadError,
+    modelSource,
+    modelFailures: modelLoadFailures,
+    modelId: MODEL_ID,
     uptime,
     totalRequests: requestLogs.length,
     recentLogs: requestLogs.slice(-10)
