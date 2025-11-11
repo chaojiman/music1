@@ -246,6 +246,11 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// 处理 favicon 请求，避免 404 错误
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

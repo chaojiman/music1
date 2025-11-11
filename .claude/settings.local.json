@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm start)",
+      "Bash(curl -s http://localhost:3000/api/status)",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:3000/api/translate -H \"Content-Type: application/json\" -d '{\"\"text\"\":\"\"Hello, world!\"\",\"\"targetLang\"\":\"\"zh-CN\"\",\"\"sourceLang\"\":\"\"en\"\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/translate -H \"Content-Type: application/json\" -d \"{\"\"text\"\":\"\"Hello world\"\",\"\"targetLang\"\":\"\"zh-CN\"\",\"\"sourceLang\"\":\"\"en\"\"}\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/translate -H \"Content-Type: application/json\" -d \"{\"\"text\"\":\"\"你好世界\"\",\"\"targetLang\"\":\"\"en\"\",\"\"sourceLang\"\":\"\"zh-CN\"\"}\")",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(dir node_modules)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
